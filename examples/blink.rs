@@ -4,36 +4,31 @@
 extern crate panic_halt;
 
 use cortex_m_rt::entry;
-use tomu_hal::{led::LedTrait, peripherals};
+use embedded_hal::watchdog::WatchdogDisable;
+use tomu_hal::{
+    delay::Delay,
+    gpio::{pin::B7, OpenDrain, GPIO},
+    prelude::*,
+    watchdog::Watchdog,
+};
 
 #[entry]
 fn main() -> ! {
-    let mut p = peripherals::take();
+    let mut p = efm32::Peripherals::take().unwrap();
+    let cp = efm32::CorePeripherals::take().unwrap();
 
-    let mut counter = 0;
+    let mut watchdog = Watchdog::new(p.WDOG).disable();
+
+    let g = GPIO::new(&mut p.CMU);
+    let mut red = g.split::<B7<OpenDrain>>();
+
+    let cmu = p.CMU.constrain().freeze();
+    let mut timer = Delay::new(cp.SYST, cmu);
 
     loop {
-        if counter == 400000 {
-            p.led.green().off();
-            p.led.red().off();
-        } else if counter == 300000 {
-            p.led.green().on();
-            p.led.red().off();
-        } else if counter == 200000 {
-            p.led.green().off();
-            p.led.red().off();
-        }
-        if counter == 100000 {
-            p.led.green().off();
-            p.led.red().on();
-        }
-
-        if counter > 0 {
-            counter = counter - 1;
-        } else {
-            counter = 400000;
-        }
-
-        p.watchdog.pet();
+        red.set_high();
+        timer.delay_ms(1000_u32);
+        red.set_low();
+        timer.delay_ms(1000_u32);
     }
 }
