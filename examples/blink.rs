@@ -4,36 +4,16 @@
 extern crate panic_halt;
 
 use cortex_m_rt::entry;
-use tomu_hal::{led::LedTrait, peripherals};
+use tomu_hal::prelude::*;
 
 #[entry]
-fn main() -> ! {
-    let mut p = peripherals::take();
+fn dogs() -> ! {
+    let mut p = efm32::Peripherals::take().unwrap();
+    let cp = efm32::CorePeripherals::take().unwrap();
 
-    let mut counter = 0;
+    p.WDOG.disable();
 
-    loop {
-        if counter == 400000 {
-            p.led.green().off();
-            p.led.red().off();
-        } else if counter == 300000 {
-            p.led.green().on();
-            p.led.red().off();
-        } else if counter == 200000 {
-            p.led.green().off();
-            p.led.red().off();
-        }
-        if counter == 100000 {
-            p.led.green().off();
-            p.led.red().on();
-        }
-
-        if counter > 0 {
-            counter = counter - 1;
-        } else {
-            counter = 400000;
-        }
-
-        p.watchdog.pet();
-    }
+    let gpio = p.GPIO.split(&mut p.CMU);
+    let red = gpio.a0.into_push_pull_output();
+    loop {}
 }

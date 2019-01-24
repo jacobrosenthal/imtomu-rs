@@ -26,6 +26,7 @@
 //! ```
 
 use crate::efm32;
+use efm32::CMU;
 
 /// Disable Input/Output no pullup.
 pub struct Disabled;
@@ -103,40 +104,14 @@ pub type OpenDrainDrivePullUp = WiredAndDrivePullUp;
 pub struct WiredAndDrivePullUpWithFilter;
 pub type OpenDrainDrivePullUpWithFilter = WiredAndDrivePullUpWithFilter;
 
-/// GPIO pin handler.
-/// Currently it doesn't hold any data.
-pub struct GPIO;
-
-impl GPIO {
-    /// Create new GPIO device, this should `take` GPIO
-    /// device exclusively, but currently it doesn't.
-    pub fn new(cmu: &mut efm32::CMU) -> Self {
-        cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
-
-        GPIO
-    }
-
-    /// Create new pin with specific mode.
-    /// For example:
-    /// ```no_run
-    /// let gpio = GPIO;
-    /// let mut a0 = gpio.split<A0<OpenDrain>>();
-    ///
-    /// a0.set_high();
-    /// ```
-    pub fn split<MODE: GPIOPinSplitter>(&self) -> MODE::GPIOPin {
-        MODE::split()
-    }
-}
-
 /// Traits to split GPIO into mode specific pin
 /// Available pins in tomu/efm32hg309f64 are set
 /// to implement this trait.
-pub trait GPIOPinSplitter {
-    type GPIOPin;
+pub trait GpioExt {
+    type Parts;
 
     /// Actual split implementation for each pin
-    fn split() -> Self::GPIOPin;
+    fn split(self, cmu: &mut CMU) -> Self::Parts;
 }
 
 macro_rules! gpio_pin_splitter {
@@ -145,10 +120,12 @@ macro_rules! gpio_pin_splitter {
      $modegroup:ident,
      $mode:ident,
      $setter:ident) => {
-        impl GPIOPinSplitter for $pin_struct<$io_mode> {
-            type GPIOPin = $pin_struct<$io_mode>;
+        impl GpioExt for $pin_struct<$io_mode> {
+            type Parts = $pin_struct<$io_mode>;
 
-            fn split() -> Self::GPIOPin {
+            fn split(self, cmu: &mut CMU) -> Self::Parts {
+                cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
+
                 unsafe {
                     (*efm32::GPIO::ptr())
                         .$modegroup
@@ -166,10 +143,12 @@ macro_rules! gpio_pin_splitter {
      $setter:ident,
      $shift:expr,
      $outset:ident) => {
-        impl GPIOPinSplitter for $pin_struct<$io_mode> {
-            type GPIOPin = $pin_struct<$io_mode>;
+        impl GpioExt for $pin_struct<$io_mode> {
+            type Parts = $pin_struct<$io_mode>;
 
-            fn split() -> Self::GPIOPin {
+            fn split(self, cmu: &mut CMU) -> Self::Parts {
+                cmu.hfperclken0.modify(|_, w| w.gpio().bit(true));
+
                 unsafe {
                     (*efm32::GPIO::ptr())
                         .$modegroup
@@ -438,6 +417,7 @@ macro_rules! gpio {
 /// Only pin available in efm32hg309f64 listed here.
 pub mod pin {
     use super::*;
+
     use core::marker::PhantomData;
     use embedded_hal::digital::{InputPin, OutputPin, ToggleableOutputPin};
 
