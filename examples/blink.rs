@@ -5,22 +5,17 @@ extern crate panic_halt;
 
 use cortex_m_rt::entry;
 use embedded_hal::watchdog::WatchdogDisable;
-use tomu_hal::{
-    delay::Delay,
-    gpio::{pin::B7, OpenDrain, GPIO},
-    prelude::*,
-    watchdog::Watchdog,
-};
+use tomu_hal::{delay::Delay, prelude::*, watchdog::Watchdog};
 
 #[entry]
 fn main() -> ! {
     let mut p = efm32::Peripherals::take().unwrap();
     let cp = efm32::CorePeripherals::take().unwrap();
 
-    let mut watchdog = Watchdog::new(p.WDOG).disable();
+    Watchdog::new(p.WDOG).disable();
 
-    let g = GPIO::new(&mut p.CMU);
-    let mut red = g.split::<B7<OpenDrain>>();
+    let gpio = p.GPIO.split(&mut p.CMU);
+    let mut red = gpio.a0.into_output_open_drain();
 
     let cmu = p.CMU.constrain().freeze();
     let mut timer = Delay::new(cp.SYST, cmu);
