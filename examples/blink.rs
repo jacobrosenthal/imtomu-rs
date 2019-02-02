@@ -16,7 +16,27 @@ fn main() -> ! {
     tomu.watchdog.disable();
 
     loop {
+        red.on();
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
         red.off();
-        timer.delay_ms(100_u32);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
+        timer.delay_ms(100_u16);
     }
 }

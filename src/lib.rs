@@ -9,7 +9,6 @@ pub use crate::efm32::interrupt;
 
 pub mod toboot;
 
-pub mod delay;
 pub mod led;
 pub mod time;
 pub mod uart;
@@ -20,7 +19,7 @@ pub mod watchdog;
 pub use tomu_macros::toboot_config;
 
 pub mod prelude {
-    pub use crate::delay::DelayExt;
+    pub use crate::systick::SystickExt;
     pub use crate::time::U32Ext;
     pub use embedded_hal::prelude::*;
     pub use embedded_hal::watchdog::Watchdog;
@@ -33,7 +32,7 @@ pub struct Tomu {
     #[allow(dead_code)]
     pub watchdog: watchdog::Watchdog,
     pub leds: led::LEDs,
-    pub delay: delay::Delay,
+    pub delay: systick::SystickDelay,
 
     /// Core peripheral: Cache and branch predictor maintenance operations
     pub CBP: efm32::CBP,
@@ -135,6 +134,8 @@ pub struct Tomu {
 use efm32_hal::{
     cmu::CMUExt,
     gpio::{EFM32Pin, GPIOExt},
+    systick,
+    systick::SystickExt,
 };
 
 impl Tomu {
@@ -152,11 +153,12 @@ impl Tomu {
         let pa0 = gpio.pa0;
         let pb7 = gpio.pb7;
         let leds = led::LEDs::new(pa0.as_opendrain(), pb7.as_opendrain());
+        let systick = cp.SYST.constrain();
 
         Some(Self {
             leds,
             watchdog: watchdog::Watchdog::new(p.WDOG),
-            delay: delay::Delay::new(cp.SYST, cmu.hfcoreclk),
+            delay: systick::SystickDelay::new(systick, cmu.hfcoreclk),
 
             // Core peripherals
             CBP: cp.CBP,
